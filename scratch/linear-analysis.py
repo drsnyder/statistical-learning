@@ -35,7 +35,7 @@ class RoundedLinearRegression(LinearRegression):
         return vround(super(LinearRegression, self).predict(X))
 
 
-all_data = pandas.read_csv("500-a.csv", names=["deleted", "votes", "message"])
+all_data = pandas.read_csv("data/500-a.csv", names=["deleted", "votes", "message"])
 msg_train, msg_test, vote_train, vote_test = train_test_split(all_data['message'], all_data['votes'], test_size=0.1)
 print len(msg_train), len(msg_test), len(msg_train) + len(msg_test)
 

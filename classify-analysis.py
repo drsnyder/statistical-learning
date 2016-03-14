@@ -24,20 +24,6 @@ def split_into_lemmas(message):
     # for each word, take its "base form" = lemma
     return [word.lemma for word in words]
 
-def dround(x):
-    if x > 0.0:
-        return round(x)
-    else:
-        return 0
-
-vround = np.vectorize(dround, otypes=[np.int64])
-
-# any < 0 => 0
-# else int(round(x))
-class RoundedLinearRegression(LinearRegression):
-    def predict(self, X):
-        return vround(super(LinearRegression, self).predict(X))
-
 class LengthTransformer(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
@@ -59,17 +45,8 @@ class ColumnExtractor(BaseEstimator, TransformerMixin):
         return self
 
 all_data = pandas.read_csv("data/500-a.csv", names=["deleted", "votes", "message"])
-print "Vote distribution: {}".format(all_data["votes"].describe())
 
-# test, limit the influence of 0s-- all_data[all_data.votes == 0].sample(frac=0.1)
-zeroes = all_data[all_data.votes == 0].sample(frac=0.03)
-with_votes = all_data[all_data.votes > 0]
-all_data = pandas.concat([zeroes, with_votes])
-
-
-
-#all_data.votes.plot(bins=1, kind='hist')
-#plt.show()
+all_data["votes"] = all_data["votes"].map(lambda vote: 1 if vote > 0 else 0)
 
 train, test = train_test_split(all_data, test_size=0.2)
 
@@ -86,7 +63,7 @@ pipeline = Pipeline([
             ('hashed', FeatureHasher()),
         ])),
     ])),
-    ('classifier', RoundedLinearRegression()),
+    ('classifier', MultinomialNB()),
 ])
 
 
@@ -96,15 +73,10 @@ trained_estimator = pipeline.fit(train, train['votes'])
 # predict the test set
 print "Predicting..."
 test_predictions = trained_estimator.predict(test)
-#print test_predictions[:20]
-#print test.votes[:20]
+print test_predictions[:20]
+print test.votes[:20]
 
 print "Preliminary score: {}".format(trained_estimator.score(test, test['votes']))
-
-
-print 'r2', r2_score(test['votes'], test_predictions)
-print 'explained variance', explained_variance_score(test['votes'], test_predictions)
-print 'MSE', mean_squared_error(test['votes'], test_predictions)
 
 scores = cross_val_score(pipeline, all_data, all_data.votes, scoring='accuracy')
 print scores
